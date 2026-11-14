@@ -1,0 +1,61 @@
+{
+    "name": "indianopinion/featured-from-source",
+    "description": "WordPress plugin: picks a credited featured image from a post's source page, with size, shape, host and provenance checks.",
+    "type": "wordpress-plugin",
+    "license": "MIT",
+    "keywords": ["wordpress", "featured-image", "og-image", "sideload", "provenance"],
+    "homepage": "https://github.com/IndianOpinion/featured-from-source",
+    "support": {
+        "issues": "https://github.com/IndianOpinion/featured-from-source/issues",
+        "email": "hello@indianopinion.org"
+    },
+    "authors": [
+        {
+            "name": "Indian Opinion",
+            "email": "hello@indianopinion.org"
+        }
+    ],
+    "require": {
+        "php": ">=8.1",
+        "ext-dom": "*",
+        "ext-libxml": "*"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.5",
+        "phpstan/phpstan": "^2.1",
+        "squizlabs/php_codesniffer": "^3.10",
+        "php-stubs/wordpress-stubs": "^6.4",
+        "php-stubs/wp-cli-stubs": "^2.10"
+    },
+    "suggest": {
+        "ext-intl": "Compares internationalised host names in their ASCII form.",
+        "ext-mbstring": "Converts pages in other character sets to UTF-8.",
+        "ext-imagick": "Reads AVIF dimensions on PHP 8.1."
+    },
+    "autoload": {
+        "psr-4": {
+            "IndianOpinion\\FeaturedFromSource\\": "src/"
+        },
+        "files": [
+            "src/functions.php"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "IndianOpinion\\FeaturedFromSource\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit",
+        "stan": "phpstan analyse --memory-limit=1G",
+        "cs": "phpcs",
+        "cbf": "phpcbf"
+    },
+    "config": {
+        "sort-packages": true,
+        "platform": {
+            "php": "8.1.0"
+        }
+    },
+    "minimum-stability": "stable"
+}
