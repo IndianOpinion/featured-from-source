@@ -124,7 +124,9 @@ final class ImageProbe
         if (class_exists('Imagick')) {
             try {
                 $image = new \Imagick();
-                $image->pingImage($file);
+                // Name the coder: the bytes are untrusted, so ImageMagick
+                // must not pick a decoder from their content.
+                $image->pingImage('avif:' . $file);
                 $width = $image->getImageWidth();
                 $height = $image->getImageHeight();
                 $image->clear();
