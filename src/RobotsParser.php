@@ -117,7 +117,8 @@ final class RobotsParser
         if ($anchored) {
             $pattern = substr($pattern, 0, -1);
         }
-        $parts = explode('*', $pattern);
+        // Runs of `*` mean the same as one and only add backtracking.
+        $parts = explode('*', (string) preg_replace('/\*+/', '*', $pattern));
         $regex = '#^' . implode('.*', array_map(static fn (string $p): string => preg_quote($p, '#'), $parts))
             . ($anchored ? '$' : '') . '#s';
         return preg_match($regex, $path) === 1;
