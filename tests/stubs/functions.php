@@ -25,6 +25,20 @@ function add_action(string $hook, callable $cb, int $priority = 10, int $args = 
 {
     return add_filter($hook, $cb, $priority, $args);
 }
+function remove_filter(string $hook, callable $cb, int $priority = 10): bool
+{
+    foreach (WP::$hooks[$hook][$priority] ?? [] as $i => [$registered]) {
+        if ($registered === $cb) {
+            unset(WP::$hooks[$hook][$priority][$i]);
+            return true;
+        }
+    }
+    return false;
+}
+function remove_action(string $hook, callable $cb, int $priority = 10): bool
+{
+    return remove_filter($hook, $cb, $priority);
+}
 function remove_all_filters(string $hook): void
 {
     unset(WP::$hooks[$hook]);

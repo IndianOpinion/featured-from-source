@@ -67,6 +67,16 @@ final class FetchTest extends TestCase
         self::assertSame('unsafe_url', $record->reason);
         self::assertSame(0, WP::requestCount('http://10.0.0.5/admin'));
 
+        // A name that resolves to the cloud metadata address is refused, and
+        // so is the literal address the core check lets through.
+        WP::$dns['metadata.attacker.example'] = ['169.254.169.254'];
+        $this->route(self::PAGE, 302, '', ['location' => 'http://metadata.attacker.example/latest/meta-data/']);
+        self::assertSame('unsafe_url', $this->runPost($this->post())->reason);
+        self::assertSame(0, WP::requestCount('http://metadata.attacker.example/latest/meta-data/'));
+        $this->route(self::PAGE, 302, '', ['location' => 'http://169.254.169.254/latest/meta-data/']);
+        self::assertSame('unsafe_url', $this->runPost($this->post())->reason);
+        self::assertSame(0, WP::requestCount('http://169.254.169.254/latest/meta-data/'));
+
         // The final URL is the base for relative URLs.
         $this->settings(['host_mode' => 'allow_list']);
         $final = 'https://news.example.com/2026/story/';
@@ -84,6 +94,26 @@ final class FetchTest extends TestCase
         $this->route('https://www.example.com/r2', 301, '', ['location' => 'https://www.example.com/r3']);
         $this->route('https://www.example.com/r3', 301, '', ['location' => 'https://www.example.com/r4']);
         self::assertSame('too_many_redirects', $this->runPost($this->post())->reason);
+    }
+
+    public function testCase23ConnectionPinnedToTheCheckedAddress(): void
+    {
+        $this->standardPage();
+        $seen = [];
+        $page = WP::$routes[self::PAGE];
+        WP::$routes[self::PAGE] = static function () use (&$seen, $page): array {
+            $seen[] = count(WP::$hooks['http_api_curl'][10] ?? []);
+            return $page;
+        };
+        WP::$dns['www.example.com'] = ['93.184.216.34'];
+        self::assertSame('done', $this->runPost($this->post())->reason);
+        self::assertSame([1], $seen, 'one pin hook during the request');
+        self::assertSame([], WP::$hooks['http_api_curl'][10] ?? [], 'pin hook removed afterwards');
+
+        // A source host whose DNS answer includes a private address is refused
+        // before any request.
+        WP::$dns['www.example.com'] = ['93.184.216.34', '10.0.0.7'];
+        self::assertSame('unsafe_url', $this->runPost($this->post())->reason);
     }
 
     public function testCase24TruncatedPageStillYieldsOgImage(): void

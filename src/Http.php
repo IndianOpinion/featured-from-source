@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace IndianOpinion\FeaturedFromSource;
 
 /**
- * Every network read goes through here: the safe request variant, at most
- * three redirects followed by hand so each hop is checked, ports 80 and 443
- * only, and the `ffs_http_args` filter that can never turn the safety off.
+ * Every network read goes through here: the safe request variant plus our
+ * own address check (AddressGuard) with the connection pinned to the checked
+ * address, at most three redirects followed by hand so each hop is checked,
+ * ports 80 and 443 only, and the `ffs_http_args` filter that can never turn
+ * the safety off.
  */
 final class Http
 {
@@ -41,7 +43,17 @@ final class Http
             if (Backoff::isBlocked($host)) {
                 return HttpResult::failure($url, Reason::HOST_BACKOFF);
             }
-            $response = wp_safe_remote_request($url, $this->args($url, $purpose, $args));
+            $addresses = AddressGuard::publicAddresses($host);
+            if ($addresses === null) {
+                return HttpResult::failure($url, Reason::UNSAFE_URL);
+            }
+            $pin = self::pin($url, $host, $addresses[0]);
+            add_action('http_api_curl', $pin, 10, 1);
+            try {
+                $response = wp_safe_remote_request($url, $this->args($url, $purpose, $args));
+            } finally {
+                remove_action('http_api_curl', $pin, 10);
+            }
             if (is_wp_error($response)) {
                 return HttpResult::failure($url, Reason::NETWORK_ERROR);
             }
@@ -62,6 +74,30 @@ final class Http
             return new HttpResult($url, $code, $headers, $body, null);
         }
         return HttpResult::failure($url, Reason::TOO_MANY_REDIRECTS);
+    }
+
+    /**
+     * A one-request hook that makes cURL connect to the address we checked,
+     * so a second DNS answer can never send the request somewhere private.
+     *
+     * @return \Closure(mixed): void
+     */
+    private static function pin(string $url, string $host, string $address): \Closure
+    {
+        $port = parse_url($url, PHP_URL_PORT);
+        if (!is_int($port)) {
+            $port = strtolower((string) parse_url($url, PHP_URL_SCHEME)) === 'https' ? 443 : 80;
+        }
+        $target = str_contains($address, ':') ? '[' . $address . ']' : $address;
+        $entry = trim($host, '[]') . ':' . $port . ':' . $target;
+        return static function ($handle) use ($entry, $host, $address): void {
+            if ($host === $address || trim($host, '[]') === $address || !defined('CURLOPT_RESOLVE')) {
+                return;
+            }
+            if ($handle instanceof \CurlHandle) {
+                curl_setopt($handle, CURLOPT_RESOLVE, [$entry]);
+            }
+        };
     }
 
     /**

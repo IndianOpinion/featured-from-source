@@ -20,7 +20,7 @@ file `featured-from-source.php` registers a small autoloader, loads
 | `Lock` | Per-post lock by atomic `add_option`, 120 second expiry. |
 | `Runner` | One run: the whole of PRD section 4 in order. Produces a `RunRecord`. |
 | `RunContext`, `Judgement` | Mutable state of a run; the result of downloading one candidate. |
-| `Http`, `HttpResult` | Every request: safe variant, hand-followed redirects with a check per hop, ports 80 and 443, the `ffs_http_args` filter with the safety re-applied after it. |
+| `Http`, `HttpResult`, `AddressGuard` | Every request: safe variant plus our own address check with the connection pinned to the checked address, hand-followed redirects with a check per hop, ports 80 and 443, the `ffs_http_args` filter with the safety re-applied after it. |
 | `Backoff` | Per-host block after 429 or 503, from `Retry-After`. |
 | `Robots`, `RobotsParser` | `robots.txt` fetch, 24 hour cache per origin, RFC 9309 matching. |
 | `HostName`, `PublicSuffix`, `HostPolicy` | Host normalisation (IDN, ports, trailing dot), list matching, registrable domains, page and image host rules, the CDN map. |
@@ -223,6 +223,16 @@ makes `add_option` atomic.
 (`redirection` 0), and `reject_unsafe_urls`, method and stream target are
 re-applied after `ffs_http_args`. Ports other than 80 and 443 end with
 `unsafe_url`, also for redirect hops.
+
+**D23a. Own address check (review, 14 November).** The core safe-URL check
+refuses only a few IPv4 private ranges: link-local (including the cloud
+metadata address 169.254.169.254), shared address space, IPv6 unique local
+and link-local, and IPv4-mapped IPv6 all pass it. `AddressGuard` therefore
+resolves every hop's host (A and AAAA), ends with `unsafe_url` when any
+address is not public or the name does not resolve, and pins the cURL
+connection to the checked address through a one-request `http_api_curl`
+hook, so a second DNS answer cannot redirect the request (rebinding). On a
+non-cURL transport the pin does not apply and only the check remains.
 
 **D24. Header images.** Case 33 skips images inside `<header>`, including an
 article's own header. This is kept as written; an operator who wants the

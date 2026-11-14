@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace IndianOpinion\FeaturedFromSource\Tests;
 
+use IndianOpinion\FeaturedFromSource\AddressGuard;
 use IndianOpinion\FeaturedFromSource\Clock;
 use IndianOpinion\FeaturedFromSource\PublicSuffix;
 use IndianOpinion\FeaturedFromSource\RunRecord;
@@ -24,6 +25,8 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
         parent::setUp();
         WP::reset();
         Clock::set(self::NOW);
+        // Never touch real DNS: hosts resolve to one public test address.
+        AddressGuard::setResolver(static fn (string $host): array => WP::$dns[$host] ?? ['93.184.216.34']);
         PublicSuffix::reset();
         \WP_CLI::$out = [];
         \WP_CLI::$tables = [];
@@ -37,6 +40,7 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
     protected function tearDown(): void
     {
         Clock::set(null);
+        AddressGuard::setResolver(null);
         parent::tearDown();
     }
 

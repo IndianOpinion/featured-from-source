@@ -44,9 +44,12 @@ final class WP
     public static bool $editorSupports = true;
     public static string $tmpDir = '';
     public static string $home = 'https://mysite.test/';
+    /** @var array<string, list<string>> Host to addresses; others resolve to a public test address. */
+    public static array $dns = [];
 
     public static function reset(): void
     {
+        self::$dns = [];
         self::$options = [];
         self::$posts = [];
         self::$meta = [];
