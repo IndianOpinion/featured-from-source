@@ -167,7 +167,12 @@ final class Runner
                     'limit_response_size' => $limit,
                     'headers' => ['Accept' => 'text/html,application/xhtml+xml'],
                 ],
-                fn (string $host, int $hop): ?string => $hop === 0 ? null : $policy->checkPageHop($host, $ctx->postId)
+                static function (string $host, int $hop, string $url) use ($policy, $robots, $ctx): ?string {
+                    if ($hop === 0) {
+                        return null;
+                    }
+                    return $policy->checkPageHop($host, $ctx->postId) ?? $robots?->check($url);
+                }
             );
             if ($result->error !== null) {
                 return $result->error === Reason::HOST_DENIED ? Reason::HOST_NOT_ALLOWED : $result->error;
@@ -177,12 +182,6 @@ final class Runner
             }
             $ctx->pageUrl = $result->url;
             $ctx->pageHost = HostName::ofUrl($result->url);
-            if ($robots !== null && $ctx->pageUrl !== $ctx->sourceUrl) {
-                $reason = $robots->check($ctx->pageUrl);
-                if ($reason !== null) {
-                    return $reason;
-                }
-            }
             $type = $result->mediaType();
             $body = $result->body;
             $ctx->truncated = strlen($body) >= $limit;
@@ -363,6 +362,7 @@ final class Runner
         $ctx->tempFiles[] = $tmp;
         $maxBytes = $settings['max_file_mib'] * 1024 * 1024;
         $http = new Http(Settings::userAgent($settings));
+        $robots = $settings['respect_robots'] ? new Robots($http, Settings::userAgent($settings), $policy) : null;
         $candidateHost = HostName::ofUrl($candidate->url);
         $result = $http->get(
             $candidate->url,
@@ -374,7 +374,12 @@ final class Runner
                 'limit_response_size' => $maxBytes + 1,
                 'headers' => ['Accept' => 'image/avif,image/webp,image/png,image/jpeg,image/gif;q=0.8'],
             ],
-            static fn (string $host, int $hop): ?string => $hop === 0 ? null : $policy->checkImageHop($host)
+            static function (string $host, int $hop, string $url) use ($policy, $robots): ?string {
+                if ($hop === 0) {
+                    return null;
+                }
+                return $policy->checkImageHop($host) ?? $robots?->check($url);
+            }
         );
         $fail = function (string $reason, ?int $w = null, ?int $h = null, ?int $bytes = null) use ($tmp, $ctx): Judgement {
             self::unlink($tmp);

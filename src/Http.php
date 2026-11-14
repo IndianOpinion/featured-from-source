@@ -23,8 +23,8 @@ final class Http
      *
      * @param string $purpose `page`, `image` or `robots`.
      * @param array<string, mixed> $args Extra request arguments.
-     * @param callable(string, int): ?string $hopCheck Host check per hop
-     *        (host, hop number); returns a reason to stop or null.
+     * @param callable(string, int, string): ?string $hopCheck Check per hop
+     *        (host, hop number, URL); returns a reason to stop or null.
      */
     public function get(string $url, string $purpose, array $args, callable $hopCheck): HttpResult
     {
@@ -34,7 +34,7 @@ final class Http
                 return HttpResult::failure($url, $reason);
             }
             $host = HostName::ofUrl($url);
-            $reason = $hopCheck($host, $hop);
+            $reason = $hopCheck($host, $hop, $url);
             if ($reason !== null) {
                 return HttpResult::failure($url, $reason);
             }

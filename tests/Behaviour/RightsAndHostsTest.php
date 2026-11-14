@@ -236,6 +236,19 @@ final class RightsAndHostsTest extends TestCase
         self::assertSame(0, WP::requestCount($img));
     }
 
+    public function testCase09RedirectTargetCheckedBeforeFetch(): void
+    {
+        $this->settings(['respect_robots' => true]);
+        $target = 'https://news.example.com/members/story';
+        $this->route('https://www.example.com/robots.txt', 404);
+        $this->route('https://news.example.com/robots.txt', 200, "User-agent: *\nDisallow: /members/\n");
+        $this->route(self::PAGE, 301, '', ['location' => $target]);
+        $this->htmlRoute($target, Fixtures::page(Fixtures::og(self::IMG)));
+        $record = $this->runPost($this->post());
+        self::assertSame('robots_disallowed', $record->reason);
+        self::assertSame(0, WP::requestCount($target));
+    }
+
     private function uninstall(): void
     {
         if (!defined('WP_UNINSTALL_PLUGIN')) {
