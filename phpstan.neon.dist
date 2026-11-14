@@ -1,0 +1,16 @@
+parameters:
+    level: 8
+    paths:
+        - src
+        - featured-from-source.php
+        - uninstall.php
+    scanFiles:
+        - vendor/php-stubs/wordpress-stubs/wordpress-stubs.php
+        - vendor/php-stubs/wp-cli-stubs/wp-cli-stubs.php
+        - vendor/php-stubs/wp-cli-stubs/wp-cli-commands-stubs.php
+    bootstrapFiles:
+        - tests/phpstan-bootstrap.php
+    treatPhpDocTypesAsCertain: false
+    ignoreErrors:
+        # WordPress core files exist only on a real install.
+        - identifier: requireOnce.fileNotFound
