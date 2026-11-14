@@ -23,16 +23,16 @@ predictable ways:
   attribute or `srcset`, so a plain `src` reader picks the spacer.
 - The page's social image is sometimes itself a spacer, a site-wide default
   card, a logo slate, or a library picture from a different story.
-- A picture can be the right file and the wrong shape: a 1200 by 152 banner
-  passes a "wide enough" test and looks broken in every card.
+- A picture can be the right file and the wrong shape: a very wide, thin banner
+  (for example 1200 by 152) passes a "wide enough" test and looks broken in
+  every card.
 - Copying a picture without recording where it came from and who made it
   leaves the site unable to answer a rights query.
 
-Measured result from production sampling: about nine in ten source social
-images were at least 1200 pixels wide and close to 16:9 and could be used as
-they were; the remaining tenth were too small or the wrong shape (one was
-1200 by 152), and a "first image" picker without the checks below regularly
-spent its single attempt on a spacer or a UI icon.
+Most imported posts had no usable image: the first `<img>` was a spacer or a
+UI icon, or the picture was too small or the wrong shape. A "first image"
+picker without the checks below regularly spends its single attempt on a
+spacer or an icon.
 
 ## 2. Goals and non-goals
 
