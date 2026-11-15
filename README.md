@@ -224,6 +224,10 @@ Uninstalling deletes the settings, queue, locks, transients, default-art store, 
 
 **Multisite?** Yes, with per-site settings and queues.
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## Licence
 
 MIT. Copyright (c) 2026 Indian Opinion. See [LICENSE](LICENSE).
